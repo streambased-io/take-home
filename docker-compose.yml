@@ -1,0 +1,60 @@
+version: '3.7'
+services:
+
+  zookeeper:
+    image: "confluentinc/cp-zookeeper:7.5.0"
+    hostname: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: "2000"
+    ports:
+      - 2181:2181
+
+  kafka1:
+    image: "confluentinc/cp-kafka:7.5.0"
+    hostname: kafka1
+    ports:
+      - 9092:9092
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG4J_LOGGERS: "kafka.authorizer.logger=INFO"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
+
+  microservices-simulator:
+    image: openjdk:17-oracle
+    hostname: microservices-simulator
+    platform: linux/amd64
+    volumes:
+      - type: bind
+        source: "./target"
+        target: /runMe
+        read_only: true
+    command: ["java", "-cp", "/runMe/take-home-local.jar", "SimulatedMicroservices"]
+
+  solution:
+    image: openjdk:17-oracle
+    hostname: solution
+    platform: linux/amd64
+    profiles:
+      - no_auto_start
+    volumes:
+      - type: bind
+        source: "./target"
+        target: /runMe
+        read_only: true
+    command: [ "java", "-cp", "/runMe/take-home-local.jar", "YourSolution" ]
+
+
